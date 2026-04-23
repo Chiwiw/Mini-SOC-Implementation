@@ -1,11 +1,11 @@
-# 🛡️ Mini SOC Project Implementation
+# Mini SOC Project Implementation
 **Role:** Infrastructure SOC Engineer | **Status:** Core Infrastructure Ready 🚀
 **GitHub Repo:** [Chiwiw/Mini-SOC-Implementation](https://github.com/Chiwiw/Mini-SOC-Implementation)
 
 ---
 
-## 🏗️ INFRASTRUCTURE SUMMARY
-Sebagai **Infrastructure SOC Engineer**, saya telah membangun dan menstabilkan stack SIEM berbasis Wazuh dengan target DVWA. Berikut adalah ringkasan pekerjaan yang telah diselesaikan:
+## INFRASTRUCTURE SUMMARY
+Sebagai **Infrastructure SOC Engineer**, kami telah membangun dan menstabilkan stack SIEM berbasis Wazuh dengan target DVWA. Berikut adalah ringkasan pekerjaan yang telah diselesaikan:
 
 1.  **Container Stabilization**: Memperbaiki issue startup pada `wazuh-manager` dan `dvwa-target`.
 2.  **Rule Refactoring**: Mengoptimalkan `local_rules.xml` dan `custom_decoders.xml` menggunakan syntax **PCRE2** modern untuk mencegah crash pada `wazuh-analysisd`.
@@ -15,7 +15,7 @@ Sebagai **Infrastructure SOC Engineer**, saya telah membangun dan menstabilkan s
 
 ---
 
-## 🛠️ PANDUAN UNTUK TEAMMATE (Langkah Selanjutnya)
+## PANDUAN UNTUK TEAMMATE (Langkah Selanjutnya)
 Project ini sudah siap di sisi infrastruktur inti. Kamu (teammate) dapat melanjutkan bagian berikut:
 
 1.  **Setup Ngrok**: Jalankan tunnel agar DVWA bisa diakses dari internet (lihat [Langkah 6](#6-aktifkan-ngrok-tunnel)).
@@ -24,7 +24,7 @@ Project ini sudah siap di sisi infrastruktur inti. Kamu (teammate) dapat melanju
 
 ---
 
-## 📋 DAFTAR ISI
+## DAFTAR ISI
 1. [Struktur Proyek](#1-struktur-proyek)
 2. [Arsitektur Jaringan](#2-arsitektur-jaringan)
 3. [Pre-Testing Checklist](#3-pre-testing-checklist)
@@ -73,8 +73,8 @@ SOC-Project/
 │   └── custom-otx.py           ← Script Threat Intel OTX
 │
 ├── scripts/
-│   ├── deploy.ps1              ← 🪟 Script deploy utama (Windows PowerShell)
-│   ├── health-check.sh         ← 🐧 Script health check (Linux/WSL/Git Bash)
+│   ├── deploy.ps1              ← Script deploy utama (Windows PowerShell)
+│   ├── health-check.sh         ← Script health check (Linux/WSL/Git Bash)
 │   ├── dvwa-entrypoint.sh      ← Entrypoint wrapper (internal, jangan diubah)
 │   └── generate-hashes.sh      ← Script generate password hash
 │
@@ -197,7 +197,7 @@ INTERNET
 
 ## 4. PANDUAN EKSEKUSI TAHAP DEMI TAHAP
 
-### ⚡ LANGKAH 0: Persiapan Awal (WAJIB, lakukan sekali)
+### LANGKAH 0: Persiapan Awal (WAJIB, lakukan sekali)
 
 **Untuk Windows (PowerShell sebagai Administrator):**
 ```powershell
@@ -239,7 +239,7 @@ nano .env
 
 ---
 
-### 🔑 LANGKAH 1: Generate Password Hashes (OPSIONAL tapi DISARANKAN)
+### LANGKAH 1: Generate Password Hashes (OPSIONAL tapi DISARANKAN)
 
 Hash di `config/internal_users.yml` masih placeholder. Untuk keamanan:
 
@@ -256,7 +256,7 @@ docker run --rm wazuh/wazuh-indexer:4.7.3 bash -c \
 
 ---
 
-### 🔐 LANGKAH 2: Generate SSL Certificates
+### LANGKAH 2: Generate SSL Certificates
 
 ```bash
 # Jalankan certificate generator (hanya sekali, lalu container exit otomatis)
@@ -279,7 +279,7 @@ ls -la config/certs/
 
 ---
 
-### 🚀 LANGKAH 3: Deploy Stack Wazuh + DVWA
+### LANGKAH 3: Deploy Stack Wazuh + DVWA
 
 **Opsi A: Menggunakan Script (DISARANKAN untuk Windows)**
 ```powershell
@@ -319,7 +319,7 @@ docker logs -f dvwa-target     # Tunggu "Wazuh Agent is running"
 
 ---
 
-### ✅ LANGKAH 4: Health Check
+### LANGKAH 4: Health Check
 
 **Windows:**
 ```powershell
@@ -350,7 +350,7 @@ Dashboard bisa dibuka di: `https://localhost`
 
 ---
 
-### 🤖 LANGKAH 5: Verifikasi Agent (OTOMATIS!)
+### LANGKAH 5: Verifikasi Agent (OTOMATIS!)
 
 Berbeda dengan versi sebelumnya, **agent sekarang sudah otomatis terinstall dan enroll** berkat `Dockerfile.dvwa`. Kamu hanya perlu verifikasi:
 
@@ -374,7 +374,7 @@ docker exec -it dvwa-target bash
 
 ---
 
-### 🌐 LANGKAH 6: Aktifkan Ngrok Tunnel
+### LANGKAH 6: Aktifkan Ngrok Tunnel
 
 ```bash
 # Pastikan DVWA aksesibel dulu
@@ -626,7 +626,7 @@ docker compose build --no-cache dvwa
 
 ---
 
-### 🔧 Script Otomatis untuk semua cek
+### Script Otomatis untuk semua cek
 
 ```bash
 # Windows PowerShell:
@@ -645,7 +645,7 @@ docker compose build --no-cache dvwa
 
 ## 10. SKENARIO DEMO
 
-### 📋 Urutan Demo di Depan Dosen
+### Urutan Demo di Depan Dosen
 
 **Durasi estimasi: 15-20 menit**
 
@@ -738,7 +738,7 @@ wsl --shutdown
 
 ---
 
-## ⚡ QUICK REFERENCE COMMANDS
+## QUICK REFERENCE COMMANDS
 
 ```bash
 # ============ WINDOWS POWERSHELL ============
