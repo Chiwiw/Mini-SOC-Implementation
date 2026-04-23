@@ -1,5 +1,5 @@
 # Mini SOC Project Implementation
-**Role:** Infrastructure SOC Engineer | **Status:** Core Infrastructure Ready 🚀
+**Status:** Core Infrastructure Ready 🚀
 **GitHub Repo:** [Chiwiw/Mini-SOC-Implementation](https://github.com/Chiwiw/Mini-SOC-Implementation)
 
 ---
