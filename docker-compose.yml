@@ -1,0 +1,244 @@
+# ============================================================
+# MINI SOC - Docker Compose Stack
+# Role: Infrastructure Builder
+# Deskripsi: Full Wazuh Stack + DVWA sebagai honeypot target
+# RAM Target: 16GB laptop
+# ============================================================
+
+services:
+
+  # ----------------------------------------------------------
+  # ZONA MONITORING - Wazuh Indexer (Opensearch / Storage)
+  # ----------------------------------------------------------
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.7.3
+    container_name: wazuh-indexer
+    hostname: wazuh-indexer
+    restart: unless-stopped
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+      - TZ=Asia/Jakarta
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+      - ./config/certs/root-ca.pem:/usr/share/wazuh-indexer/certs/root-ca.pem:ro
+      - ./config/certs/wazuh-indexer.pem:/usr/share/wazuh-indexer/certs/wazuh-indexer.pem:ro
+      - ./config/certs/wazuh-indexer-key.pem:/usr/share/wazuh-indexer/certs/wazuh-indexer-key.pem:ro
+      - ./config/wazuh_indexer.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - ./config/internal_users.yml:/usr/share/wazuh-indexer/opensearch-security/internal_users.yml:ro
+      # CATATAN: /etc/localtime mount dihapus karena tidak kompatibel Windows
+      # Timezone diatur via env TZ=Asia/Jakarta
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: '1.5'
+    networks:
+      soc-net:
+        ipv4_address: 172.20.0.10
+        aliases:
+          - wazuh.indexer
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/9200'"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 90s
+
+  # ----------------------------------------------------------
+  # ZONA MONITORING - Wazuh Manager (Analysis Engine)
+  # ----------------------------------------------------------
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.7.3
+    container_name: wazuh-manager
+    hostname: wazuh-manager
+    restart: unless-stopped
+    environment:
+      - INDEXER_URL=https://wazuh-indexer:9200
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=${INDEXER_PASSWORD}
+      - FILEBEAT_SSL_VERIFICATION_MODE=full
+      - SSL_CERTIFICATE_AUTHORITIES=/etc/ssl/root-ca.pem
+      - SSL_CERTIFICATE=/etc/ssl/filebeat.pem
+      - SSL_KEY=/etc/ssl/filebeat-key.pem
+      - TZ=Asia/Jakarta
+    volumes:
+      - wazuh-manager-api-configuration:/var/ossec/api/configuration
+      - wazuh-manager-etc:/var/ossec/etc
+      - wazuh-manager-logs:/var/ossec/logs
+      - wazuh-manager-queue:/var/ossec/queue
+      - wazuh-manager-var-multigroups:/var/ossec/var/multigroups
+      - wazuh-manager-agentless:/var/ossec/agentless
+      - wazuh-manager-wodles:/var/ossec/wodles
+      - wazuh-filebeat-etc:/etc/filebeat
+      - wazuh-filebeat-var:/var/lib/filebeat
+      # Mount konfigurasi kustom kita ke /wazuh-config-mount (wajib untuk Wazuh 4.x Docker)
+      - ./config/ossec.conf:/wazuh-config-mount/etc/ossec.conf:ro
+      - ./custom-rules/local_rules.xml:/wazuh-config-mount/etc/rules/local_rules.xml:ro
+      - ./custom-rules/custom_decoders.xml:/wazuh-config-mount/etc/decoders/local_decoder.xml:ro
+      - ./integrations/custom-otx.py:/var/ossec/integrations/custom-otx.py
+      # Sertifikat (root-ca.pem, bukan root-ca-manager.pem)
+      - ./config/certs/root-ca.pem:/etc/ssl/root-ca.pem:ro
+      - ./config/certs/wazuh-manager.pem:/etc/ssl/filebeat.pem:ro
+      - ./config/certs/wazuh-manager-key.pem:/etc/ssl/filebeat-key.pem:ro
+      # Persistensi log alert ke folder lokal (agar tidak hilang saat restart)
+      - ./wazuh-logs:/var/ossec/logs/alerts
+    ports:
+      - "1514:1514/tcp"          # Agent communication (TCP)
+      - "1514:1514/udp"          # Agent communication (UDP)
+      - "1515:1515"              # Agent enrollment
+      - "514:514/udp"            # Syslog input
+      - "55000:55000"            # Wazuh REST API
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: '2.0'
+    networks:
+      soc-net:
+        ipv4_address: 172.20.0.11
+    depends_on:
+      wazuh-indexer:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "/var/ossec/bin/wazuh-control status | grep -q 'is running'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # ----------------------------------------------------------
+  # ZONA MONITORING - Wazuh Dashboard (Visualization)
+  # ----------------------------------------------------------
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.7.3
+    container_name: wazuh-dashboard
+    hostname: wazuh-dashboard
+    restart: unless-stopped
+    environment:
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=${INDEXER_PASSWORD}
+      - WAZUH_API_URL=https://wazuh-manager
+      - DASHBOARD_USERNAME=kibanaserver
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=${API_PASSWORD}
+      - OPENSEARCH_HOSTS=https://wazuh-indexer:9200
+      - TZ=Asia/Jakarta
+    extra_hosts:
+      - "wazuh.indexer:172.20.0.10"
+    volumes:
+      - ./config/certs/wazuh-dashboard.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem:ro
+      - ./config/certs/wazuh-dashboard-key.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem:ro
+      - ./config/certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem:ro
+      # Konfigurasi koneksi ke Wazuh API (agar Dashboard bisa tampilkan data agent)
+      - ./config/wazuh_dashboard.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml:ro
+    ports:
+      - "443:5601"               # Dashboard HTTPS (akses via https://localhost)
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '1.0'
+    networks:
+      soc-net:
+        ipv4_address: 172.20.0.12
+    depends_on:
+      wazuh-manager:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sk", "https://localhost:5601/app/wazuh"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+  # ----------------------------------------------------------
+  # ZONA ASET - DVWA (Honey-Target + Wazuh Agent)
+  # ----------------------------------------------------------
+  dvwa:
+    build:
+      context: .
+      dockerfile: Dockerfile.dvwa
+    image: soc-dvwa-target:latest
+    container_name: dvwa-target
+    hostname: dvwa-target
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Jakarta
+      - MYSQL_ROOT_PASSWORD=${DVWA_DB_PASSWORD}
+      - WAZUH_MANAGER=172.20.0.11
+      - WAZUH_AGENT_NAME=dvwa-target
+      - WAZUH_AGENT_GROUP=web-servers
+    volumes:
+      # Konfigurasi Apache kustom untuk memastikan logging aktif
+      - ./config/apache-logging.conf:/etc/apache2/conf-enabled/logging.conf:ro
+      # Persistensi log agar tidak hilang saat restart
+      - dvwa-apache-logs:/var/log/apache2
+    ports:
+      - "8080:80"                # Port forwarding untuk Ngrok (ngrok http 8080)
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.5'
+    networks:
+      soc-net:
+        ipv4_address: 172.20.0.20
+    depends_on:
+      wazuh-manager:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:80/"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # ----------------------------------------------------------
+  # UTIL - Certificate Generator (run once, lalu exit)
+  # ----------------------------------------------------------
+  wazuh-certs-generator:
+    image: wazuh/wazuh-certs-generator:0.0.2
+    container_name: wazuh-certs-generator
+    hostname: wazuh-certs-generator
+    volumes:
+      - ./config/certs:/certificates
+      - ./config/certs.yml:/config/certs.yml:ro
+    networks:
+      - soc-net
+    profiles:
+      - setup                    # Hanya jalan saat: docker compose --profile setup up
+
+# ----------------------------------------------------------
+# VOLUMES - Persistensi Data
+# ----------------------------------------------------------
+volumes:
+  wazuh-indexer-data:
+  wazuh-manager-api-configuration:
+  wazuh-manager-etc:
+  wazuh-manager-logs:
+  wazuh-manager-queue:
+  wazuh-manager-var-multigroups:
+  wazuh-manager-agentless:
+  wazuh-manager-wodles:
+  wazuh-filebeat-etc:
+  wazuh-filebeat-var:
+  dvwa-apache-logs:
+
+# ----------------------------------------------------------
+# NETWORKS - Zona Network dengan IP Statis
+# ----------------------------------------------------------
+networks:
+  soc-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1

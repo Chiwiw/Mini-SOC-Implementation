@@ -1,0 +1,58 @@
+<!--
+  ============================================================
+  custom_decoders.xml - Custom Log Decoders
+  SOC Project | Infrastructure Builder
+
+  Decoders ini membantu Wazuh mengekstrak field dari log
+  Apache DVWA agar rules bisa mencocokkan srcip, url, dll.
+
+  Lokasi di container: /var/ossec/etc/decoders/local_decoder.xml
+  ============================================================
+-->
+
+<!-- ============================================================
+     DECODER 1: Apache Combined Log Format (DVWA)
+     Format: %h %l %u %t "%r" %>s %O "%{Referer}i" "%{User-Agent}i" %D
+     Contoh: 192.168.1.1 - - [01/Jan/2024:12:00:00 +0700] "GET /vulnerabilities/sqli/?id=1' OR '1'='1 HTTP/1.1" 200 1234 "-" "Mozilla/5.0" 12345
+============================================================ -->
+<decoder name="apache-dvwa-access">
+  <parent>web-accesslog</parent>
+  <type>web-log</type>
+  <prematch>^[0-9]*.[0-9]*.[0-9]*.[0-9]* - </prematch>
+  <regex type="pcre2">^(\d+\.\d+\.\d+\.\d+) - \S+ \[\S+ \S+\] "(\S+) (\S+) \S+" (\d+) \d+ "\S+" "(.+)"</regex>
+  <order>srcip, protocol, url, status, extra_data</order>
+</decoder>
+
+<!-- ============================================================
+     DECODER 2: Apache Combined Detailed (dengan response time)
+     Untuk format combined_detailed yang kita definisikan di apache-logging.conf
+============================================================ -->
+<decoder name="apache-dvwa-detailed">
+  <parent>web-accesslog</parent>
+  <type>web-log</type>
+  <prematch>^[0-9]*.[0-9]*.[0-9]*.[0-9]* - </prematch>
+  <regex type="pcre2">^(\d+\.\d+\.\d+\.\d+) - \S+ \[\S+ \S+\] "(\S+) (\S+) \S+" (\d+) \d+ "\S+" "(.+)" (\d+)</regex>
+  <order>srcip, protocol, url, status, extra_data, response_time</order>
+</decoder>
+
+<!-- ============================================================
+     DECODER 3: DVWA SQL Error Messages
+     Menangkap pesan error MySQL yang muncul saat SQLi berhasil
+============================================================ -->
+<decoder name="dvwa-mysql-error">
+  <program_name>^apache2</program_name>
+  <prematch>MySQL|mysqli|SQL syntax</prematch>
+  <regex type="pcre2">(\S+): (.+)</regex>
+  <order>status, extra_data</order>
+</decoder>
+
+<!-- ============================================================
+     DECODER 4: Menangkap request POST ke DVWA upload endpoint
+============================================================ -->
+<decoder name="dvwa-file-upload">
+  <parent>web-accesslog</parent>
+  <type>web-log</type>
+  <prematch>POST.*upload</prematch>
+  <regex type="pcre2">^(\d+\.\d+\.\d+\.\d+) - \S+ \[\S+ \S+\] "(POST) (\S+)"</regex>
+  <order>srcip, protocol, url</order>
+</decoder>

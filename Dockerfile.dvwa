@@ -1,0 +1,70 @@
+# ============================================================
+# Dockerfile.dvwa - DVWA + Wazuh Agent Pre-installed
+# SOC Project | Infrastructure Builder
+#
+# Tujuan: Agar Wazuh Agent tidak hilang saat container restart.
+# Agent sudah ter-install dan terkonfigurasi di dalam image.
+# ============================================================
+
+FROM vulnerables/web-dvwa:latest
+
+LABEL maintainer="Infrastructure Builder - SOC Project"
+LABEL description="DVWA honeypot with pre-installed Wazuh Agent 4.7.3"
+
+# ============================================================
+# ENVIRONMENT
+# ============================================================
+ENV WAZUH_MANAGER="172.20.0.11"
+ENV WAZUH_AGENT_NAME="dvwa-target"
+ENV WAZUH_AGENT_GROUP="web-servers"
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Fix Debian Stretch sources to use archive
+RUN echo "deb http://archive.debian.org/debian stretch main" > /etc/apt/sources.list && \
+    echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/10-nocheckvalid
+
+RUN apt-get update && \
+    apt-get install -y --allow-unauthenticated --no-install-recommends \
+        curl \
+        gnupg2 \
+        apt-transport-https \
+        procps \
+        iproute2 \
+    && \
+    # Add Wazuh repository key
+    curl -sk https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
+    echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list && \
+    # Disable SSL verification for apt due to old Debian Stretch CA certs
+    echo 'Acquire::https::Verify-Peer "false";' > /etc/apt/apt.conf.d/99verify-peer.conf && \
+    # Install Wazuh Agent
+    apt-get update && \
+    apt-get install -y --allow-unauthenticated --no-install-recommends wazuh-agent=4.7.3-* && \
+    # Cleanup untuk mengecilkan image size
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# ============================================================
+# COPY KONFIGURASI AGENT
+# ============================================================
+COPY config/ossec-agent.conf /var/ossec/etc/ossec.conf
+
+# Pastikan permission benar
+RUN chown root:wazuh /var/ossec/etc/ossec.conf && \
+    chmod 640 /var/ossec/etc/ossec.conf
+
+# ============================================================
+# COPY ENTRYPOINT WRAPPER
+# ============================================================
+COPY scripts/dvwa-entrypoint.sh /entrypoint-wrapper.sh
+RUN chmod +x /entrypoint-wrapper.sh
+
+# ============================================================
+# EXPOSE PORTS
+# ============================================================
+EXPOSE 80
+
+# ============================================================
+# ENTRYPOINT
+# Menjalankan Wazuh Agent + Apache (DVWA) bersamaan
+# ============================================================
+ENTRYPOINT ["/entrypoint-wrapper.sh"]

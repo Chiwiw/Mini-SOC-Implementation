@@ -1,0 +1,43 @@
+# ============================================================
+# internal_users.yml - Wazuh Indexer Internal Users
+# ============================================================
+# ⚠️ PENTING: Hash di bawah adalah PLACEHOLDER (demo hash).
+#    Sebelum demo/produksi, generate hash baru yang sesuai!
+#
+# CARA GENERATE HASH:
+#   Opsi 1 (Script): ./scripts/generate-hashes.sh (via WSL/Git Bash)
+#   Opsi 2 (Manual):
+#     docker run --rm wazuh/wazuh-indexer:4.7.3 bash -c \
+#       "plugins/opensearch-security/tools/hash.sh -p 'PasswordKamu'"
+#
+# Setelah generate, ganti setiap "hash:" di bawah lalu restart:
+#   docker compose restart wazuh-indexer
+# ============================================================
+
+_meta:
+  type: "internalusers"
+  config_version: 2
+
+admin:
+  hash: "$2y$12$GMj1qCBbvEU2MQ1TzYJSCuCOjsraZpVwyWv2CVH.9CG.9wWng5/t2"
+  reserved: true
+  backend_roles:
+    - "admin"
+  description: "Admin user"
+
+kibanaserver:
+  hash: "$2y$12$FSTzs.xIZgKrWtzQCOSbT.zr29C1jFuL9AHPPmoltdIRuD8c2t4/a"
+  reserved: true
+  description: "OpenSearch Dashboards user"
+
+wazuh:
+  hash: "$2y$12$GMj1qCBbvEU2MQ1TzYJSCuCOjsraZpVwyWv2CVH.9CG.9wWng5/t2"
+  reserved: false
+  backend_roles:
+    - "admin"
+  description: "Wazuh user"
+
+wazuh-wui:
+  hash: "$2y$12$y6MTqVoFeviNBzvYE.hiquaQhZVSn4PoEx4I/Dy6p9vQurZkYoB/S"
+  reserved: false
+  description: "Wazuh API user"

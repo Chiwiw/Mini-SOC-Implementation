@@ -1,0 +1,22 @@
+# ============================================================
+# certs.yml - Certificate Configuration
+# Digunakan oleh wazuh-certs-generator
+# Jalankan: docker compose --profile setup up wazuh-certs-generator
+# ============================================================
+
+nodes:
+
+  # Indexer node(s)
+  indexer:
+    - name: wazuh-indexer
+      ip: 172.20.0.10
+
+  # Server/Manager node(s)
+  server:
+    - name: wazuh-manager
+      ip: 172.20.0.11
+
+  # Dashboard node(s)
+  dashboard:
+    - name: wazuh-dashboard
+      ip: 172.20.0.12

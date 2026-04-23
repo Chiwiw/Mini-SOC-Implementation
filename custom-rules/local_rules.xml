@@ -1,0 +1,293 @@
+<!--
+  ============================================================
+  local_rules.xml - Custom Detection Rules
+  SOC Project | Infrastructure Builder
+  
+  Level Severity:
+  0       = Ignored (tidak generate alert)
+  1-3     = Informational
+  4-6     = Low severity
+  7-9     = Medium severity
+  10-12   = High severity
+  13-15   = Critical
+  ============================================================
+-->
+<group name="soc-project,web-attacks,">
+
+  <!-- ============================================================
+       GROUP 1: SQL INJECTION DETECTION
+       Rule ID: 100001 - 100010
+  ============================================================ -->
+
+  <!-- Rule 100001: SQLi Basic (UNION, SELECT) -->
+  <rule id="100001" level="12">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(union.*select|select.*from|insert.*into|drop.*table|delete.*from|update.*set)</url>
+    <description>SQL Injection attempt detected - UNION/SELECT payload from $(srcip)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,attack,</group>
+  </rule>
+
+  <!-- Rule 100002: SQLi Authentication Bypass -->
+  <rule id="100002" level="12">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)('.*--|\-\-|\bor\b.*=.*|'.*=.*'|1=1|admin'|' or '1'='1)</url>
+    <description>SQL Injection Auth Bypass attempt from $(srcip)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,attack,</group>
+  </rule>
+
+  <!-- Rule 100003: SQLi Blind / Time-Based -->
+  <rule id="100003" level="13">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(sleep\(\d+\)|benchmark\(|waitfor.*delay|pg_sleep|extractvalue|updatexml)</url>
+    <description>Blind/Time-based SQL Injection detected from $(srcip)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,blind_sqli,attack,</group>
+  </rule>
+
+  <!-- Rule 100004: SQLi - Multiple attempts (escalation) -->
+  <rule id="100004" level="15" frequency="5" timeframe="60">
+    <if_matched_sid>100001</if_matched_sid>
+    <description>CRITICAL: Multiple SQL Injection attempts from $(srcip) - Possible automated attack!</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,attack,high_volume,</group>
+  </rule>
+
+  <!-- ============================================================
+       GROUP 2: CROSS-SITE SCRIPTING (XSS) DETECTION
+       Rule ID: 100011 - 100020
+  ============================================================ -->
+
+  <!-- Rule 100011: XSS - Script tag injection -->
+  <rule id="100011" level="10">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(&lt;script|%3Cscript|&lt;/script|%3C%2Fscript|javascript:|vbscript:)</url>
+    <description>XSS attempt detected - Script injection from $(srcip)</description>
+    <mitre>
+      <id>T1059.007</id>
+    </mitre>
+    <group>xss,attack,</group>
+  </rule>
+
+  <!-- Rule 100012: XSS - Event handler injection -->
+  <rule id="100012" level="10">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(onerror=|onload=|onclick=|onmouseover=|onfocus=|onblur=|oninput=|onchange=)</url>
+    <description>XSS attempt - Event handler injection from $(srcip)</description>
+    <mitre>
+      <id>T1059.007</id>
+    </mitre>
+    <group>xss,attack,</group>
+  </rule>
+
+  <!-- Rule 100013: XSS - Encoded payloads -->
+  <rule id="100013" level="11">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(&#x3C;|&#60;|\\u003c|%253c|\\x3c)</url>
+    <description>XSS attempt - Encoded script tag from $(srcip)</description>
+    <mitre>
+      <id>T1059.007</id>
+    </mitre>
+    <group>xss,evasion,attack,</group>
+  </rule>
+
+  <!-- ============================================================
+       GROUP 3: BRUTE FORCE DETECTION
+       Rule ID: 100021 - 100030
+  ============================================================ -->
+
+  <!-- Rule 100021: HTTP 401/403 login failure (Base) -->
+  <rule id="100021" level="3">
+    <if_group>web|accesslog|apache</if_group>
+    <regex type="pcre2">HTTP/\d\.\d" (401|403)</regex>
+    <description>HTTP authentication failure from $(srcip)</description>
+    <group>brute_force,authentication_failure,</group>
+  </rule>
+
+  <!-- Rule 100024: Multiple HTTP login failures (Brute Force) -->
+  <rule id="100024" level="10" frequency="8" timeframe="60">
+    <if_matched_sid>100021</if_matched_sid>
+    <same_source_ip />
+    <description>Possible brute force - Multiple auth failures from $(srcip)</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>brute_force,authentication_failure,attack,</group>
+  </rule>
+
+  <!-- Rule 100022: DVWA Login page hammering (Base) -->
+  <rule id="100022" level="3">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">login\.php</url>
+    <regex>POST</regex>
+    <description>POST request to DVWA login page from $(srcip)</description>
+    <group>brute_force,dvwa,</group>
+  </rule>
+
+  <!-- Rule 100025: DVWA Brute Force detection -->
+  <rule id="100025" level="11" frequency="10" timeframe="60">
+    <if_matched_sid>100022</if_matched_sid>
+    <same_source_ip />
+    <description>Brute force on DVWA login page from $(srcip)</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>brute_force,dvwa,attack,</group>
+  </rule>
+
+  <!-- Rule 100023: SSH Brute Force (dari auth.log) -->
+  <rule id="100023" level="10" frequency="6" timeframe="60">
+    <if_matched_sid>5710</if_matched_sid>
+    <same_source_ip />
+    <description>SSH Brute force attack detected from $(srcip)</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>brute_force,ssh,attack,</group>
+  </rule>
+
+  <!-- ============================================================
+       GROUP 4: FILE UPLOAD / DEFACEMENT DETECTION
+       Rule ID: 100031 - 100040
+  ============================================================ -->
+
+  <!-- Rule 100031: PHP file upload via web -->
+  <rule id="100031" level="13">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(\.php|\.phtml|\.php3|\.php4|\.php5|\.phar)</url>
+    <regex>POST</regex>
+    <description>Suspicious PHP file upload attempt from $(srcip)</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+    <group>file_upload,webshell,attack,</group>
+  </rule>
+
+  <!-- Rule 100032: Web Shell access attempt -->
+  <rule id="100032" level="14">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(cmd=|shell=|exec=|system=|passthru=|phpinfo\(\)|base64_decode|eval\()</url>
+    <description>Web shell execution attempt detected from $(srcip)</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+    <group>webshell,rce,attack,</group>
+  </rule>
+
+  <!-- Rule 100033: New file created in web directory (FIM) -->
+  <rule id="100033" level="12">
+    <if_sid>554</if_sid>
+    <field name="file">/var/www/html</field>
+    <match>New file</match>
+    <description>New file created in web directory: $(file) - Possible defacement/webshell upload!</description>
+    <mitre>
+      <id>T1491.001</id>
+    </mitre>
+    <group>fim,defacement,file_upload,</group>
+  </rule>
+
+  <!-- Rule 100034: PHP/Shell file created in web directory -->
+  <rule id="100034" level="15">
+    <if_sid>554</if_sid>
+    <field name="file" type="pcre2">\.php$|\.phtml$|\.sh$|\.phar$</field>
+    <description>CRITICAL: Executable file dropped in web directory: $(file)</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+    <group>fim,webshell,critical,</group>
+  </rule>
+
+  <!-- ============================================================
+       GROUP 5: PATH TRAVERSAL / LFI / RFI
+       Rule ID: 100041 - 100050
+  ============================================================ -->
+
+  <!-- Rule 100041: Path Traversal -->
+  <rule id="100041" level="11">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(\.\./|\.\.\\|%2e%2e%2f|%252e%252e%252f|\.\.%2f|%2e%2e/)</url>
+    <description>Path Traversal attempt from $(srcip)</description>
+    <mitre>
+      <id>T1055</id>
+    </mitre>
+    <group>path_traversal,lfi,attack,</group>
+  </rule>
+
+  <!-- Rule 100042: LFI - Sensitive file access -->
+  <rule id="100042" level="12">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(etc/passwd|etc/shadow|etc/hosts|proc/self|windows/system32|boot\.ini)</url>
+    <description>LFI attempt - Sensitive file access from $(srcip)</description>
+    <mitre>
+      <id>T1083</id>
+    </mitre>
+    <group>lfi,attack,</group>
+  </rule>
+
+  <!-- Rule 100043: RFI - Remote File Inclusion -->
+  <rule id="100043" level="13">
+    <if_group>web|accesslog|apache</if_group>
+    <url type="pcre2">(?i)(=http://|=https://|=ftp://|=php://|=file://|=data://)</url>
+    <description>Remote File Inclusion (RFI) attempt from $(srcip)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>rfi,attack,</group>
+  </rule>
+
+  <!-- ============================================================
+       GROUP 6: SCANNING & RECONNAISSANCE
+       Rule ID: 100051 - 100060
+  ============================================================ -->
+
+  <!-- Rule 100051: Scanner User-Agent detection -->
+  <rule id="100051" level="8">
+    <if_group>web|accesslog|apache</if_group>
+    <regex type="pcre2">(?i)(nikto|sqlmap|nmap|masscan|acunetix|nessus|openvas|w3af|burpsuite|dirbuster|gobuster|hydra|medusa)</regex>
+    <description>Known vulnerability scanner detected from $(srcip)</description>
+    <mitre>
+      <id>T1595</id>
+    </mitre>
+    <group>scanner,reconnaissance,attack,</group>
+  </rule>
+
+  <!-- Rule 100052: HTTP 404 (Base) -->
+  <rule id="100052" level="3">
+    <if_group>web|accesslog|apache</if_group>
+    <regex type="pcre2">HTTP/\d\.\d" 404</regex>
+    <description>HTTP 404 response to $(srcip)</description>
+    <group>scanner,enumeration,</group>
+  </rule>
+
+  <!-- Rule 100055: High volume of 404 (directory scanning) -->
+  <rule id="100055" level="10" frequency="20" timeframe="60">
+    <if_matched_sid>100052</if_matched_sid>
+    <same_source_ip />
+    <description>Directory/file enumeration detected from $(srcip) - High 404 rate</description>
+    <mitre>
+      <id>T1595.003</id>
+    </mitre>
+    <group>scanner,enumeration,attack,</group>
+  </rule>
+
+  <!-- Rule 100053: SQLMap specific detection -->
+  <rule id="100053" level="12">
+    <if_group>web|accesslog|apache</if_group>
+    <regex type="pcre2">(?i)sqlmap</regex>
+    <description>SQLMap automated injection tool detected from $(srcip)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sqlmap,sql_injection,automated,attack,</group>
+  </rule>
+
+</group>

@@ -1,0 +1,29 @@
+# ============================================================
+# .gitignore - SOC Project
+# ============================================================
+
+# JANGAN pernah commit credentials & sertifikat!
+.env
+config/certs/
+wazuh-logs/
+
+# Ngrok config (berisi authtoken) & binary
+ngrok.yml
+ngrok-bin/
+ngrok.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker override & build cache
+docker-compose.override.yml
+.docker/
+
+# IDE
+.vscode/
+.idea/
+
+# Log files lokal
+*.log
