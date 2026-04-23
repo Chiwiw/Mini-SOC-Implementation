@@ -425,73 +425,72 @@ ngrok start dvwa
 
 ---
 
-## 7. PANDUAN UNTUK ATTACKER
+## 7. SKENARIO DEMO / SIMULASI (Roleplay SOC)
 
-> **Berikan informasi ini kepada tim Attacker saat demo:**
+Bagian ini adalah panduan lengkap untuk melakukan presentasi/demo. Skenario ini mengasumsikan teman Anda (Red Teamer) **belum melakukan setup apapun** dan hanya butuh URL untuk diserang.
 
-```
-TARGET URL   : https://XXXX.ngrok-free.app   (isi URL Ngrok aktual)
-LOGIN DVWA   : admin / password
-DVWA SECURITY: Set ke LOW untuk demo (di DVWA Settings)
+### 🧑‍💻 Peran 1: Anda sebagai SOC Analyst (Defender)
 
-Jenis serangan yang akan terdeteksi SOC:
-✓ SQL Injection (manual maupun sqlmap)
-✓ XSS (Reflected & Stored)
-✓ Brute Force login
-✓ File Upload (web shell)
-✓ Path Traversal / LFI / RFI
-✓ Directory scanning (nikto, dirb, gobuster)
-✓ Vulnerability scanner (nmap, nessus, acunetix)
-```
+**Langkah 1: Menyalakan SOC Pipeline (Jika belum)**
+1. Buka PowerShell di folder `Mini-SOC-Implementation`.
+2. Jalankan `docker compose up -d`
+3. Tunggu sekitar 2-3 menit hingga semua container `Up (healthy)`.
 
-**Contoh payload SQLi untuk demo:**
-```
-http://NGROK_URL/vulnerabilities/sqli/?id=1' OR '1'='1&Submit=Submit
-http://NGROK_URL/vulnerabilities/sqli/?id=1 UNION SELECT 1,2--
-```
+**Langkah 2: Menyiapkan Akses Web Publik (Ngrok)**
+1. Buka PowerShell baru, jalankan: `ngrok http 8080`
+2. Akan muncul **Forwarding URL** (contoh: `https://abcd-1234.ngrok-free.app`).
+3. **Kirim URL ini ke teman Anda (Attacker).**
 
-**Contoh payload XSS untuk demo:**
-```
-http://NGROK_URL/vulnerabilities/xss_r/?name=<script>alert('XSS')</script>
-```
+**Langkah 3: Membuka Layar Pemantauan**
+1. Buka browser dan akses **Wazuh Dashboard**: `https://localhost`
+2. Login dengan `admin` / `WazuhSOC@2024!`
+3. Masuk ke tab **Discover** atau menu **Wazuh > Modules > Security events**.
+4. Set rentang waktu di pojok kanan atas ke **Last 15 minutes**.
+5. Nyalakan **Auto-refresh** (klik tombol *Refresh* > set ke 10 detik).
+6. Tampilkan layar ini di proyektor atau *share-screen*.
 
 ---
 
-## 8. PANDUAN UNTUK ANALYST
+### 🥷 Peran 2: Teman Anda sebagai Red Teamer (Attacker)
 
-### Aktivasi Threat Intelligence (OTX)
+Teman Anda tidak perlu menginstall apapun. Ia hanya butuh **Browser** atau **Command Prompt / Terminal** bawaan OS-nya. Berikan instruksi ini kepadanya:
 
-1. Daftar di https://otx.alienvault.com
-2. Dapatkan API Key dari profile
-3. Edit file `.env`:
-   ```
-   OTX_API_KEY=your_actual_api_key_here
-   ```
-4. Edit `config/ossec.conf`, ganti di bagian `<integration>`:
-   ```xml
-   <api_key>your_actual_api_key_here</api_key>
-   ```
-5. Restart Wazuh Manager:
-   ```bash
-   docker restart wazuh-manager
-   ```
+> **Instruksi untuk Attacker:**
+> "Silakan serang URL ini: `https://[URL-NGROK-ANDA]`"
 
-### Melihat Alert di Dashboard
+**Skenario Serangan 1: SQL Injection (SQLi) via Browser**
+- Minta teman Anda membuka URL ini di browsernya:
+  ```text
+  https://[URL-NGROK-ANDA]/vulnerabilities/sqli/?id=1'+OR+'1'='1&Submit=Submit
+  ```
 
-1. Buka https://localhost
-2. Login dengan admin
-3. Menu: **Threat Intelligence** → **Events** → Filter by rule group `soc-project`
-4. Untuk FIM: **File Integrity Monitoring** → pilih agent `dvwa-target`
+**Skenario Serangan 2: Cross-Site Scripting (XSS) via Browser**
+- Minta teman Anda membuka URL ini di browsernya:
+  ```text
+  https://[URL-NGROK-ANDA]/vulnerabilities/xss_r/?name=<script>alert('Hacked')</script>
+  ```
 
-### Query Alert via API
+**Skenario Serangan 3: Automated Scanner (Menggunakan CMD/Terminal bawaan)**
+- Minta teman Anda membuka **CMD (Command Prompt)** di laptopnya dan menjalankan perintah `curl` palsu ini (seolah-olah sedang memakai *tools* SQLMap atau Nikto):
+  ```bash
+  # Pura-pura menjalankan Nikto Scanner
+  curl -s -A "nikto/2.1.0" https://[URL-NGROK-ANDA]/ > NUL
+  
+  # Pura-pura menjalankan SQLMap
+  curl -s -A "sqlmap/1.0" https://[URL-NGROK-ANDA]/ > NUL
+  ```
 
-```bash
-# Cek agent status
-curl -sk -u wazuh-wui:WazuhAPI@2024! http://localhost:55000/agents?pretty=true
+---
 
-# Ambil alert terbaru
-curl -sk -u wazuh-wui:WazuhAPI@2024! http://localhost:55000/alerts?pretty=true&limit=10
-```
+### 🚨 Penutup: Analisis Alert
+
+Begitu teman Anda mengeksekusi serangan di atas, kembali ke layar Anda (Wazuh Dashboard):
+1. **Tunjukkan Grafik:** Perlihatkan bahwa ada lonjakan (*spike*) yang muncul secara *real-time* tepat saat teman Anda menyerang.
+2. **Buka Detail Alert:** Klik ikon tanda panah pada salah satu log serangan (contoh: yang *SQLMap*).
+3. **Jelaskan ke Audiens:**
+   - *"Sistem SIEM kami berhasil menangkap payload SQL Injection dan anomali akses."*
+   - Tunjukkan atribut `data.srcip` (Ini adalah IP asli teman Anda yang terdeteksi menembus Ngrok).
+   - Tunjukkan atribut `rule.description` (Penjelasan otomatis dari sistem terkait bahaya jenis serangannya).
 
 ---
 
