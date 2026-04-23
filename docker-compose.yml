@@ -37,7 +37,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2g
+          memory: 1g
           cpus: '1.5'
     networks:
       soc-net:
@@ -98,7 +98,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2g
+          memory: 1536m
           cpus: '2.0'
     networks:
       soc-net:
@@ -144,7 +144,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1g
+          memory: 768m
           cpus: '1.0'
     networks:
       soc-net:
@@ -186,7 +186,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512m
+          memory: 384m
           cpus: '0.5'
     networks:
       soc-net:
