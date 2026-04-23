@@ -1,20 +1,7 @@
-# ============================================================
-# wazuh_dashboard.yml (wazuh.yml) - Wazuh Dashboard API Config
-# SOC Project | Infrastructure Builder
-#
-# File ini memberitahu Dashboard di mana Wazuh API berada
-# agar bisa menampilkan data Agent, Alerts, dan lainnya.
-#
-# Mount ke: /usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml
-#
-# ⚠️ PENTING: Password di bawah HARUS SAMA dengan API_PASSWORD
-#    di file .env! Jika diubah di .env, ubah juga di sini!
-# ============================================================
-
 hosts:
   - default:
       url: https://wazuh-manager
       port: 55000
       username: wazuh-wui
-      password: WazuhAPI@2024!
+      password: wazuh-wui
       run_as: false
