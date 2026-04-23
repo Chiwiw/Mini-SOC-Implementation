@@ -30,9 +30,9 @@
 <decoder name="apache-dvwa-detailed">
   <parent>web-accesslog</parent>
   <type>web-log</type>
-  <prematch>^[0-9]*.[0-9]*.[0-9]*.[0-9]* - </prematch>
-  <regex type="pcre2">^(\d+\.\d+\.\d+\.\d+) - \S+ \[\S+ \S+\] "(\S+) (\S+) \S+" (\d+) \d+ "\S+" "(.+)" (\d+)</regex>
-  <order>srcip, protocol, url, status, extra_data, response_time</order>
+  <prematch>^"\S+" \d+\.\d+\.\d+\.\d+ - |^\d+\.\d+\.\d+\.\d+ - </prematch>
+  <regex type="pcre2">^(?:"((?:\d{1,3}\.){3}\d{1,3})(?:,[^"]*)?" )?(\d+\.\d+\.\d+\.\d+) - \S+ \[\S+ \S+\] "(\S+) (\S+) \S+" (\d+) \d+ "\S+" "(.+)" (?:"([^"]*)" )?(\d+)</regex>
+  <order>srcip,proxy_ip,protocol,url,status,extra_data,xff_header,response_time</order>
 </decoder>
 
 <!-- ============================================================

@@ -41,7 +41,7 @@ services:
           cpus: '1.5'
     networks:
       soc-net:
-        ipv4_address: 172.20.0.10
+        ipv4_address: 172.31.250.10
         aliases:
           - wazuh.indexer
     healthcheck:
@@ -63,7 +63,7 @@ services:
       - INDEXER_URL=https://wazuh-indexer:9200
       - INDEXER_USERNAME=admin
       - INDEXER_PASSWORD=${INDEXER_PASSWORD}
-      - FILEBEAT_SSL_VERIFICATION_MODE=full
+      - FILEBEAT_SSL_VERIFICATION_MODE=certificate
       - SSL_CERTIFICATE_AUTHORITIES=/etc/ssl/root-ca.pem
       - SSL_CERTIFICATE=/etc/ssl/filebeat.pem
       - SSL_KEY=/etc/ssl/filebeat-key.pem
@@ -82,7 +82,7 @@ services:
       - ./config/ossec.conf:/wazuh-config-mount/etc/ossec.conf:ro
       - ./custom-rules/local_rules.xml:/wazuh-config-mount/etc/rules/local_rules.xml:ro
       - ./custom-rules/custom_decoders.xml:/wazuh-config-mount/etc/decoders/local_decoder.xml:ro
-      - ./integrations/custom-otx.py:/var/ossec/integrations/custom-otx.py
+      - ./integrations/custom-otx.py:/var/ossec/integrations/custom-otx
       # Sertifikat (root-ca.pem, bukan root-ca-manager.pem)
       - ./config/certs/root-ca.pem:/etc/ssl/root-ca.pem:ro
       - ./config/certs/wazuh-manager.pem:/etc/ssl/filebeat.pem:ro
@@ -102,7 +102,7 @@ services:
           cpus: '2.0'
     networks:
       soc-net:
-        ipv4_address: 172.20.0.11
+        ipv4_address: 172.31.250.11
     depends_on:
       wazuh-indexer:
         condition: service_healthy
@@ -132,13 +132,13 @@ services:
       - OPENSEARCH_HOSTS=https://wazuh-indexer:9200
       - TZ=Asia/Jakarta
     extra_hosts:
-      - "wazuh.indexer:172.20.0.10"
+      - "wazuh.indexer:172.31.250.10"
     volumes:
       - ./config/certs/wazuh-dashboard.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem:ro
       - ./config/certs/wazuh-dashboard-key.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem:ro
       - ./config/certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem:ro
       # Konfigurasi koneksi ke Wazuh API (agar Dashboard bisa tampilkan data agent)
-      - ./config/wazuh_dashboard.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml:ro
+      - ./config/wazuh_dashboard.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml
     ports:
       - "443:5601"               # Dashboard HTTPS (akses via https://localhost)
     deploy:
@@ -148,7 +148,7 @@ services:
           cpus: '1.0'
     networks:
       soc-net:
-        ipv4_address: 172.20.0.12
+        ipv4_address: 172.31.250.12
     depends_on:
       wazuh-manager:
         condition: service_healthy
@@ -173,7 +173,7 @@ services:
     environment:
       - TZ=Asia/Jakarta
       - MYSQL_ROOT_PASSWORD=${DVWA_DB_PASSWORD}
-      - WAZUH_MANAGER=172.20.0.11
+      - WAZUH_MANAGER=172.31.250.11
       - WAZUH_AGENT_NAME=dvwa-target
       - WAZUH_AGENT_GROUP=web-servers
     volumes:
@@ -190,7 +190,7 @@ services:
           cpus: '0.5'
     networks:
       soc-net:
-        ipv4_address: 172.20.0.20
+        ipv4_address: 172.31.250.20
     depends_on:
       wazuh-manager:
         condition: service_healthy
@@ -240,5 +240,5 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/24
-          gateway: 172.20.0.1
+        - subnet: 172.31.250.0/24
+          gateway: 172.31.250.1
