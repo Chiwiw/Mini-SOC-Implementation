@@ -138,7 +138,7 @@ services:
       - ./config/certs/wazuh-dashboard-key.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem:ro
       - ./config/certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem:ro
       # Konfigurasi koneksi ke Wazuh API (agar Dashboard bisa tampilkan data agent)
-      - ./config/wazuh_dashboard.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml
+      # - ./config/wazuh_dashboard.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml
     ports:
       - "443:5601"               # Dashboard HTTPS (akses via https://localhost)
     deploy:
@@ -215,6 +215,15 @@ services:
       - soc-net
     profiles:
       - setup                    # Hanya jalan saat: docker compose --profile setup up
+
+  # attacker
+  attacker:
+    build: 
+      context: ./attacker-node  # Mengarah ke folder yang berisi Dockerfile tadi
+    container_name: attacker-node
+    networks:
+      - soc-net
+    restart: unless-stopped
 
 # ----------------------------------------------------------
 # VOLUMES - Persistensi Data
