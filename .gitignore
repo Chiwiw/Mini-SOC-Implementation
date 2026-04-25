@@ -3,9 +3,9 @@
 # ============================================================
 
 # JANGAN pernah commit credentials & sertifikat!
-# (DI-COMMENT AGAR BISA DIPUSH KE GITHUB UNTUK SETUP TEMAN)
-# .env
-# config/certs/
+# (AKTIFKAN KEMBALI SAAT FINALISASI OPEN SOURCE)
+.env
+config/certs/
 wazuh-logs/
 
 # Ngrok config (berisi authtoken) & binary

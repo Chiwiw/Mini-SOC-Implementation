@@ -104,6 +104,24 @@ Seluruh langkah operasional dipisahkan pada:
 
 Runbook mencakup quick start, deployment penuh, health verification, validasi agent, koneksi Ngrok, dan troubleshooting.
 
+### Open Source Setup Notes
+Untuk kolaborasi publik, file sensitif tidak lagi disimpan di repository.
+
+1. Buat file environment lokal dari template:
+	```bash
+	cp .env.example .env
+	```
+	(Windows PowerShell)
+	```powershell
+	Copy-Item .env.example .env
+	```
+2. Isi semua placeholder di `.env` dengan credential milikmu.
+3. Generate sertifikat lokal saat setup pertama:
+	```bash
+	docker compose --profile setup up wazuh-certs-generator
+	```
+4. Jangan commit `.env` dan isi `config/certs/` ke repository.
+
 ## Security Notes
 1. Jangan commit `.env`, secret, atau material private key.
 2. Ganti semua credential default sebelum demo publik.

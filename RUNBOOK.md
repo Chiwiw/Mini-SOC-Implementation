@@ -11,9 +11,21 @@ Dokumen ini adalah panduan operasional resmi untuk menyiapkan, menjalankan, memv
 
 ### 2.1 Kebutuhan Sistem
 1. Docker Engine atau Docker Desktop aktif.
-2. File `.env` tersedia dan terisi.
+2. File `.env` tersedia dan terisi (buat dari `.env.example`).
 3. Direktori `config/certs/` tersedia.
 4. Kernel parameter `vm.max_map_count=262144` sudah diterapkan.
+
+### 2.3 Inisialisasi File Rahasia Lokal
+```bash
+cp .env.example .env
+```
+
+Untuk PowerShell:
+```powershell
+Copy-Item .env.example .env
+```
+
+Isi semua placeholder pada `.env`, lalu lanjutkan deployment. Jangan commit `.env` dan isi `config/certs/` ke repository.
 
 ### 2.2 Konfigurasi `vm.max_map_count`
 ```bash
