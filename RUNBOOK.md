@@ -15,7 +15,7 @@ Dokumen ini adalah panduan operasional resmi untuk menyiapkan, menjalankan, memv
 3. Direktori `config/certs/` tersedia.
 4. Kernel parameter `vm.max_map_count=262144` sudah diterapkan.
 
-### 2.3 Inisialisasi File Rahasia Lokal
+### 2.2 Inisialisasi File Rahasia Lokal
 ```bash
 cp .env.example .env
 ```
@@ -27,7 +27,7 @@ Copy-Item .env.example .env
 
 Isi semua placeholder pada `.env`, lalu lanjutkan deployment. Jangan commit `.env` dan isi `config/certs/` ke repository.
 
-### 2.2 Konfigurasi `vm.max_map_count`
+### 2.3 Konfigurasi `vm.max_map_count`
 ```bash
 # Linux
 sudo sysctl -w vm.max_map_count=262144
